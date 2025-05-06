@@ -28,3 +28,19 @@ pip install transformers==4.32.1
 ```bash
 python run.py --img_path sample/cat1.png --prompt "a cat" --trg_prompt "a pig" --w_cut 3.0 --patch_size 1 2 --n_patches 256
 ```
+
+### TODO
+- [ ] Update README
+- [ ] Requirements.txt (export from python venv)
+- [ ] Add arguments to inferece.py script for modelpath
+- [ ] Training: Resolve/Refactor imports
+- [ ] Training: Compute Metrics (optional) Copy metrics folder from ASP Repo
+- [ ] Validate repository instructions (Emty venv/installation/model download)
+- [ ] Quote ASP Paper
+- [ ] Quote Diffusers library
+- [ ] Used Dataset links
+- [ ] Figures
+  - [ ] Examples
+  - [ ] Training
+  - [ ] Inference
+- [ ] Acknowledgement/Citation
