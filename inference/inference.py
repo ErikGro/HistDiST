@@ -2,10 +2,8 @@ import PIL
 import torch
 from tqdm.auto import tqdm
 from diffusers import DDIMScheduler, StableDiffusionInstructPix2PixPipeline, DDIMInverseScheduler
-import os 
 import math 
 from torchvision.transforms import v2
-import matplotlib.pyplot as plt
 from transformers import AutoImageProcessor, ViTModel
 import argparse
 
@@ -20,19 +18,10 @@ def main():
     eta_cosine_min_20 = lambda x: 0.6 - (0.4 / 1) * math.cos(math.pi * x)
     eta_cosine_min_30 = lambda x: 0.65 - (0.35 / 1) * math.cos(math.pi * x)
 
-    ############ Inversion parameters
-    prompt_inversion = "H&E"
-    prompt_translation = "IHC"
-    steps_inversion = 100
-    steps_translation = 100
-    eta_schedule_inversion = eta_zero
-    eta_schedule_translation = eta_cosine_min_20
-    normalize = "inversion" # "steps", "inversion", None
-
     ########## Inversion and translation
-    input_er_image = PIL.Image.open("./example_images/er.jpg")
-    input_batch = torch.stack([v2.ToTensor()(image) for image in [input_er_image]])
-    translated = inversion_translate(args.model_folder_path, args.device, args.dtype, args.prediction_type, args.device, input_batch, prompt_inversion, prompt_translation, steps_inversion, steps_translation, eta_schedule_inversion, eta_schedule_translation, normalize)
+    input_pil_image = PIL.Image.open(args.img_path)
+    input_batch = torch.stack([v2.ToTensor()(image) for image in [input_pil_image]])
+    translated = inversion_translate(args, input_batch, eta_zero, eta_cosine_min_20)
     translated[0].save(f"output.jpg")
 
 
@@ -52,35 +41,37 @@ def parse_args():
 
 
 @torch.no_grad()
-def inversion_translate(model_folder_path, device, dType, prediction_type, input_batch, prompt_inversion, prompt_translation, steps_inversion, steps_translation, eta_schedule_inversion, eta_schedule_translation, normalize):
-    pipe = StableDiffusionInstructPix2PixPipeline.from_pretrained(model_folder_path).to(device=device, dType=dType)
+def inversion_translate(args, input_batch, eta_schedule_inversion, eta_schedule_translation):
+    pipe = StableDiffusionInstructPix2PixPipeline.from_pretrained(args.model_folder_path).to(device=args.device,    
+                                                                                             dtype=getattr(torch, args.dtype))
     batch_size = input_batch.shape[0]
-    input_batch_encoded = pipe.vae.encode(input_batch.to(device) * 2 - 1)
+    input_batch_encoded = pipe.vae.encode(input_batch.to(args.device) * 2 - 1)
     he_image_embeds = input_batch_encoded.latent_dist.mode()
     encoder_hidden_states_inversion = pipe._encode_prompt(
-        prompt_inversion, device, batch_size, False
+        args.prompt_inversion, args.device, batch_size, False
     )
     encoder_hidden_states_translation = pipe._encode_prompt(
-        prompt_translation, device, batch_size, False
+        args.prompt_translation, args.device, batch_size, False
     )
 
     feature_extractor = ViTModel.from_pretrained("owkin/phikon", add_pooling_layer=False)
     image_processor = AutoImageProcessor.from_pretrained("owkin/phikon")
         
     ###### Inversion
-    if prediction_type == "v_prediction":
-        pipe.scheduler = DDIMInverseScheduler.from_pretrained(model_folder_path, subfolder="scheduler", prediction_type="v_prediction", timestep_spacing="trailing", rescale_betas_zero_snr=True)
-    elif prediction_type == "epsilon":
-        pipe.scheduler = DDIMInverseScheduler.from_pretrained(model_folder_path, subfolder="scheduler", prediction_type="epsilon")
+    if args.prediction_type == "v_prediction":
+        pipe.scheduler = DDIMInverseScheduler.from_pretrained(args.model_folder_path, subfolder="scheduler", prediction_type="v_prediction", timestep_spacing="trailing", rescale_betas_zero_snr=True)
+    elif args.prediction_type == "epsilon":
+        pipe.scheduler = DDIMInverseScheduler.from_pretrained(args.model_folder_path, subfolder="scheduler", prediction_type="epsilon")
     else:
         raise ValueError("prediction_type has to be either epsilon or v_prediction")
         
-    pipe.scheduler.set_timesteps(steps_inversion, device=device)
+    pipe.scheduler.set_timesteps(args.steps_inversion, device=args.device)
     input_batch_inversion = 0.18215 * input_batch_encoded.latent_dist.sample()
-    latents_inversion = input_batch_inversion.clone().to(device)
+    latents_inversion = input_batch_inversion.clone().to(args.device)
 
-    for i in range(0, steps_inversion):
-        x = float(i) / float(steps_inversion - 1)
+    print("Performing inversion")
+    for i in tqdm(range(0, args.steps_inversion), total=args.steps_inversion):
+        x = float(i) / float(args.steps_inversion - 1)
         
         timestep_current = pipe.scheduler.timesteps[i]
         latents_inversion_scaled = pipe.scheduler.scale_model_input(latents_inversion, timestep_current)
@@ -117,7 +108,7 @@ def inversion_translate(model_folder_path, device, dType, prediction_type, input
         
         prev_sample = alpha_prod_t_current ** (0.5) * pred_original_sample + pred_sample_direction
 
-        if normalize == "steps":
+        if args.normalize == "steps":
             prev_sample = (prev_sample - prev_sample.mean(dim=(2,3), keepdim=True)) / prev_sample.std(dim=(2,3), keepdim=True)
             
         if eta > 0:
@@ -127,7 +118,7 @@ def inversion_translate(model_folder_path, device, dType, prediction_type, input
 
         
     ##### Normalize final latents
-    if normalize == "inversion":
+    if args.normalize == "inversion":
         latents_inversion = (latents_inversion - latents_inversion.mean(dim=(2,3), keepdim=True)) / latents_inversion.std(dim=(2,3), keepdim=True)
 
 
@@ -138,22 +129,23 @@ def inversion_translate(model_folder_path, device, dType, prediction_type, input
 
 
     ###### translation
-    if prediction_type == "v_prediction":
-        pipe.scheduler = DDIMScheduler.from_pretrained(model_folder_path, subfolder="scheduler", prediction_type="v_prediction", timestep_spacing="trailing", rescale_betas_zero_snr=True)
-    elif prediction_type == "epsilon":
-        pipe.scheduler = DDIMScheduler.from_pretrained(model_folder_path, subfolder="scheduler", prediction_type="epsilon")
+    if args.prediction_type == "v_prediction":
+        pipe.scheduler = DDIMScheduler.from_pretrained(args.model_folder_path, subfolder="scheduler", prediction_type="v_prediction", timestep_spacing="trailing", rescale_betas_zero_snr=True)
+    elif args.prediction_type == "epsilon":
+        pipe.scheduler = DDIMScheduler.from_pretrained(args.model_folder_path, subfolder="scheduler", prediction_type="epsilon")
     else:
         raise ValueError("prediction_type has to be either epsilon or v_prediction")
 
-    pipe.scheduler.set_timesteps(steps_translation, device=device)
+    pipe.scheduler.set_timesteps(args.steps_translation, device=args.device)
 
-    latents_translation = latents_inversion.clone()        
-    for i in range(0, steps_translation):
+    latents_translation = latents_inversion.clone()
+    print("Performing translation")    
+    for i in tqdm(range(0, args.steps_translation), total=args.steps_translation):
         timestep_next = pipe.scheduler.timesteps[i]
         latent_model_input = pipe.scheduler.scale_model_input(latents_translation, timestep_next)
         latent_model_input = torch.cat([latent_model_input, he_image_embeds], dim=1)
         noise_pred = pipe.unet(latent_model_input, timestep_next, encoder_hidden_states=encoder_hidden_states_translation).sample
-        x = float(i) / float(steps_translation - 1)
+        x = float(i) / float(args.steps_translation - 1)
         eta = max(min(eta_schedule_translation(x), 1), 0)
         latents_translation = pipe.scheduler.step(noise_pred, timestep_next, latents_translation, eta=eta).prev_sample
             
