@@ -25,6 +25,7 @@ from contextlib import nullcontext
 from pathlib import Path
 import statistics
 import random
+from typing import List
 
 import accelerate
 import datasets
@@ -36,6 +37,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
 import transformers
+import timm
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import ProjectConfiguration, set_seed
@@ -44,7 +46,9 @@ from huggingface_hub import create_repo, upload_folder
 from packaging import version
 from torchvision import transforms
 from tqdm.auto import tqdm
-from transformers import CLIPTextModel, CLIPTokenizer, AutoImageProcessor, ViTModel, Swinv2Model
+from transformers import CLIPTextModel, CLIPTokenizer, AutoImageProcessor, ViTModel
+from pytorch_fid.fid_score import calculate_activation_statistics, calculate_frechet_distance
+from pytorch_fid.inception import InceptionV3
 
 import diffusers
 from diffusers import AutoencoderKL, DDPMScheduler, StableDiffusionInstructPix2PixPipeline, UNet2DConditionModel, DDIMScheduler
@@ -56,15 +60,15 @@ from diffusers.utils.torch_utils import is_compiled_module
 from torchvision.transforms import v2
 from skimage.metrics import structural_similarity as ssim
 import cv2
-from torch.optim.lr_scheduler import LambdaLR
+from random import shuffle
+from PIL import Image
+from torchvision import transforms
+
+from datasets import Dataset, Features
+from datasets import Image as ImageFeature
 
 if is_wandb_available():
     import wandb
-
-# import sys
-# sys.path.append("/graphics/scratch2/students/grosskop/AdaptiveSupervisedPatchNCE/")
-# from evaluate import compute_fid
-from evaluate_training import compute_fid
 
 # Will error if the minimal version of diffusers is not installed. Remove at your own risks.
 check_min_version("0.32.1")
@@ -363,18 +367,6 @@ def parse_args():
     return args
 
 
-def convert_to_np(image):
-    image = image.convert("RGB")
-    return np.array(image).transpose(2, 0, 1)
-
-
-def download_image(url):
-    image = PIL.Image.open(requests.get(url, stream=True).raw)
-    image = PIL.ImageOps.exif_transpose(image)
-    image = image.convert("RGB")
-    return image
-
-
 def main():
     args = parse_args()
 
@@ -402,6 +394,26 @@ def main():
         project_config=accelerator_project_config,
     )
     
+    
+    def gen_examples(path, num_samples_to_use):
+        def fn():
+            for he_path in list(Path(path + "/TrainValAB/trainA").glob('*.jpg'))[:num_samples_to_use]:
+                yield {
+                    "he_image": {"path": str(he_path)},
+                    "ihc_image": {"path": str(he_path).replace("trainA", "trainB")}
+                }
+
+        return fn
+
+
+    dataset = Dataset.from_generator(
+        gen_examples("/graphics/scratch3/staff/hosseinza/MIST/PR", num_samples_to_use=4096),
+        features=Features(
+            he_image=ImageFeature(),
+            ihc_image=ImageFeature()
+        ),
+    )
+    
     model = ViTModel.from_pretrained("owkin/phikon", add_pooling_layer=False)
     image_processor = AutoImageProcessor.from_pretrained("owkin/phikon")
     model.to(accelerator.device)
@@ -412,13 +424,46 @@ def main():
     guidance_scale = 0
     inference_batch_size = 4
     dir_he = Path("/graphics/scratch2/students/grosskop/benchmark_er_testset/valA/")
-    # dir_he = Path("/graphics/scratch2/students/grosskop/benchmark_her2_bci_dataset/valA/")
     dir_ihc_target = Path("/graphics/scratch2/students/grosskop/benchmark_er_testset/valB")
-    # dir_ihc_target = Path("/graphics/scratch2/students/grosskop/benchmark_her2_bci_dataset/valB")
     dir_ihc_genereated = os.path.join(args.output_dir, "generated/ihc")
     dir_he_genereated = os.path.join(args.output_dir, "generated/he")
     os.makedirs(dir_ihc_genereated, exist_ok=True)
     os.makedirs(dir_he_genereated, exist_ok=True)
+
+
+    def convert_to_np(image):
+        image = image.convert("RGB")
+        return np.array(image).transpose(2, 0, 1)
+        
+        
+    def compute_fid(targ_dir: str, pred_dir: str, device="cuda") -> float:
+        img_list = [f for f in os.listdir(pred_dir) if f.endswith(('png', 'jpg'))]
+        img_format = '.' + img_list[0].split('.')[-1]
+        img_list = [f.replace('.png', '').replace('.jpg', '') for f in img_list]
+        random.seed(0)
+        random.shuffle(img_list)
+        
+        # FID statistics
+        num_avail_cpus = len(os.sched_getaffinity(0))
+        num_workers = min(num_avail_cpus, 8)
+
+        real_paths = [os.path.join(targ_dir, f + img_format) for f in img_list]
+        fake_paths = [os.path.join(pred_dir, f + img_format) for f in img_list]
+        print(f"Total number of images: {len(real_paths)}")
+
+        dims = 2048
+        block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
+        model = InceptionV3([block_idx]).to(device)
+
+        m1, s1 = calculate_activation_statistics(real_paths, model, batch_size=10, dims=dims,
+                                            device=device, num_workers=num_workers)
+
+        m2, s2 = calculate_activation_statistics(fake_paths, model, batch_size=10, dims=dims,
+                                            device=device, num_workers=num_workers)
+
+        fid_value = calculate_frechet_distance(m1, s1, m2, s2)
+        
+        return fid_value
 
     def genreateImages(pipe):
         steps = 1000 // inference_batch_size
@@ -438,7 +483,6 @@ def main():
                 image_guidance_scale=image_guidance_scale,
                 guidance_scale=guidance_scale,
             ).images
-            # generator=torch.Generator("cuda").manual_seed(0),
             
             he_generated = pipe([args.he_generation_prompt] * len(tensor_batch),
                 num_inference_steps=num_inference_steps,
@@ -721,9 +765,6 @@ def main():
         weight_decay=args.adam_weight_decay,
         eps=args.adam_epsilon,
     )
-
-    from MISTDataset import mist_ds
-    dataset = mist_ds
 
     # Preprocessing the datasets.
     # We need to tokenize input captions and transform the images.
@@ -1043,7 +1084,6 @@ def main():
             if global_step >= args.max_train_steps:
                 break
 
-        # EPOCH Finished
         print(f"EPOCH {epoch} finished")
         if accelerator.is_main_process:
             accelerator.log({"train_loss_epoch": statistics.mean(epoch_mse_losses)}, step=global_step)
@@ -1066,11 +1106,11 @@ def main():
                     requires_safety_checker = False
                 )
 
-                # log_validation(
-                #     pipeline,
-                #     args,
-                #     accelerator
-                # )
+                log_validation(
+                    pipeline,
+                    args,
+                    accelerator
+                )
 
                 if args.use_ema:
                     # Switch back to the original UNet parameters.
@@ -1099,11 +1139,11 @@ def main():
         )
         pipeline.save_pretrained(args.output_dir)
 
-        # log_validation(
-        #     pipeline,
-        #     args,
-        #     accelerator
-        # )
+        log_validation(
+            pipeline,
+            args,
+            accelerator
+        )
     accelerator.end_training()
 
 

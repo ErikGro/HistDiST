@@ -43,7 +43,14 @@ pip install transformers==4.32.1
 
 ### Training
 ```bash
-python inference/inference.py --model_folder_path path/to/er_model_folder --img_path inference/example_images/er.jpg
+python training/training.py \
+--pretrained_model_name_or_path=botp/stable-diffusion-v1-5 \
+--output_dir=training/output \
+--num_train_epochs=300 \
+--train_batch_size=16 \
+--prediction_type=v_prediction \
+--mixed_precision=bf16 \
+--resolution=512
 ```
 
 ### Inference
