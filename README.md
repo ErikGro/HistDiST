@@ -41,7 +41,7 @@ pip install diffusers==0.16.1
 pip install transformers==4.32.1 
 ```
 
-### Traininn
+### Training
 - dataset_dir 
   - Structure of MIST Dataset 
 - validation_dir
@@ -66,17 +66,17 @@ python inference/inference.py --model_folder_path path/to/er_model_folder --img_
 ```
 
 ### TODO
-- [ ] Update README
-- [ ] Requirements.txt (export from python venv)
-- [ ] Add arguments to inferece.py script for modelpath
+- [x] Update README
+- [x] Add arguments to inferece.py script for modelpath
 - [ ] Training: Resolve/Refactor imports
 - [ ] Training: Compute Metrics (optional) Copy metrics folder from ASP Repo
+- [ ] Requirements.txt (export from python venv)
 - [ ] Validate repository instructions (Emty venv/installation/model download)
 - [ ] Quote ASP Paper
 - [ ] Quote Diffusers library
-- [ ] Used Dataset links
-- [ ] Figures
-  - [ ] Examples
-  - [ ] Training
-  - [ ] Inference
+- [x] Used Dataset links
+- [x] Figures
+  - [x] Examples
+  - [x] Training
+  - [x] Inference
 - [ ] Acknowledgement/Citation
