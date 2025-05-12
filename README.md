@@ -41,7 +41,14 @@ pip install diffusers==0.16.1
 pip install transformers==4.32.1 
 ```
 
-### Training
+### Traininn
+- dataset_dir 
+  - Structure of MIST Dataset 
+- validation_dir
+  - Structure like xyz 
+  - 1000 jpg images size 512x512 
+  - Compute FID/SSIM/PSNR
+
 ```bash
 python training/training.py \
 --pretrained_model_name_or_path=botp/stable-diffusion-v1-5 \

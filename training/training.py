@@ -21,28 +21,23 @@ import logging
 import math
 import os
 import shutil
-from contextlib import nullcontext
 from pathlib import Path
 import statistics
 import random
-from typing import List
 
 import accelerate
 import datasets
 import numpy as np
 import PIL
-import requests
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.utils.checkpoint
 import transformers
 import timm
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import ProjectConfiguration, set_seed
-from datasets import load_dataset
-from huggingface_hub import create_repo, upload_folder
+from huggingface_hub import create_repo
 from packaging import version
 from torchvision import transforms
 from tqdm.auto import tqdm
@@ -60,7 +55,6 @@ from diffusers.utils.torch_utils import is_compiled_module
 from torchvision.transforms import v2
 from skimage.metrics import structural_similarity as ssim
 import cv2
-from random import shuffle
 from PIL import Image
 from torchvision import transforms
 
@@ -393,7 +387,6 @@ def main():
         log_with=args.report_to,
         project_config=accelerator_project_config,
     )
-    
     
     def gen_examples(path, num_samples_to_use):
         def fn():
