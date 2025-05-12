@@ -27,10 +27,10 @@ H&E generation (red arrows, label (2)) conditioned on CLIP text embeddings, and 
 </div>
 VAE encoder maps H&E image to latent space, where DDIM inversion derives noise latent and η-noise scheduling injects noise at different timesteps during denoising. The U-Net, conditioned on Phikon embeddings, refines the features, and the VAE decoder generates the final IHC output.
 
-## Models
+## Setup
+### Models
 All trained models can be downloaded from [Google Drive](https://drive.google.com/drive/folders/1onzQ05SVYCxsGMYhMis25Bsm3nwFbiyi?usp=sharing).
 
-## Setup
 ### Datasets
 [MIST](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE) and [BCI](https://github.com/bupt-ai-cz/BCI) datasets are used to finetune our models from H&E to ER/HER2/Ki67/PR transfer. Images are cropped randomly from size 1024x1024 to 512x512.
 
@@ -43,10 +43,13 @@ pip install transformers==4.32.1
 
 ### Training
 ```bash
-python run.py --img_path sample/cat1.png --prompt "a cat" --trg_prompt "a pig" --w_cut 3.0 --patch_size 1 2 --n_patches 256
+python inference/inference.py --model_folder_path path/to/er_model_folder --img_path inference/example_images/er.jpg
 ```
 
 ### Inference
+```bash
+python inference/inference.py --model_folder_path path/to/er_model_folder --img_path inference/example_images/er.jpg
+```
 
 ### TODO
 - [ ] Update README
