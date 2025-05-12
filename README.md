@@ -1,7 +1,7 @@
 # HistDiST: Histopathological Diffusion-based Stain Transfer
 
 Official pytorch implementation of HistDiST.
-This repository contains scripts for finetuning pretrained stable diffusion models for the task stain transfer and the corresponding inference script.
+This repository contains scripts for fine-tuning pretrained Stable Diffusion models for the task of stain transfer, along with the corresponding inference script.
 
 Erik Großkopf,
 [Valay Bundele](https://scholar.google.com/citations?user=xWvW9_UAAAAJ&hl=en&oi=ao),
@@ -25,7 +25,7 @@ H&E generation (red arrows, label (2)) conditioned on CLIP text embeddings, and 
 <div align="center">
   <img src="assets/inference.jpg" width="98%"/>  
 </div>
-(Left): VAE encoder maps H&E image to latent space, where DDIM inversion derives noise latent and η-noise scheduling injects noise at different timesteps during denoising. The U-Net, conditioned on Phikon embeddings, refines the features, and the VAE decoder generates the final IHC output. (Right) η-schedules, with cosine-start schedules optimizing FID and structural preservation.
+VAE encoder maps H&E image to latent space, where DDIM inversion derives noise latent and η-noise scheduling injects noise at different timesteps during denoising. The U-Net, conditioned on Phikon embeddings, refines the features, and the VAE decoder generates the final IHC output.
 
 ## Models
 All trained models can be downloaded from [Google Drive](https://drive.google.com/drive/folders/1onzQ05SVYCxsGMYhMis25Bsm3nwFbiyi?usp=sharing).
