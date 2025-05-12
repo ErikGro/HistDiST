@@ -42,10 +42,11 @@ def parse_args():
 
 @torch.no_grad()
 def inversion_translate(args, input_batch, eta_schedule_inversion, eta_schedule_translation):
+    dtype = getattr(torch, args.dtype)
     pipe = StableDiffusionInstructPix2PixPipeline.from_pretrained(args.model_folder_path).to(device=args.device,    
-                                                                                             dtype=getattr(torch, args.dtype))
+                                                                                             dtype=dtype)
     batch_size = input_batch.shape[0]
-    input_batch_encoded = pipe.vae.encode(input_batch.to(args.device) * 2 - 1)
+    input_batch_encoded = pipe.vae.encode(input_batch.to(dtype=dtype, device=args.device) * 2 - 1)
     he_image_embeds = input_batch_encoded.latent_dist.mode()
     encoder_hidden_states_inversion = pipe._encode_prompt(
         args.prompt_inversion, args.device, batch_size, False
@@ -77,8 +78,7 @@ def inversion_translate(args, input_batch, eta_schedule_inversion, eta_schedule_
         latents_inversion_scaled = pipe.scheduler.scale_model_input(latents_inversion, timestep_current)
         latent_model_input = torch.cat([latents_inversion_scaled, torch.zeros_like(latents_inversion_scaled)], dim=1)
         
-        encoder_hidden_states = encoder_hidden_states_inversion
-        model_output = pipe.unet(latent_model_input, timestep_current, encoder_hidden_states=encoder_hidden_states).sample
+        model_output = pipe.unet(latent_model_input, timestep_current, encoder_hidden_states=encoder_hidden_states_inversion).sample
                 
         timestep_next = min(
             timestep_current - pipe.scheduler.config.num_train_timesteps // pipe.scheduler.num_inference_steps, pipe.scheduler.config.num_train_timesteps - 1
@@ -124,8 +124,8 @@ def inversion_translate(args, input_batch, eta_schedule_inversion, eta_schedule_
 
     ##### Features extractor for translation
     feature_extractor.to(pipe.device)
-    inputs = image_processor(input_batch, return_tensors="pt", do_rescale=False).to(pipe.device)
-    encoder_hidden_states_translation = feature_extractor(**inputs).last_hidden_state.to(pipe.device)
+    inputs = image_processor(input_batch, return_tensors="pt", do_rescale=False).to(device=pipe.device, dtype=dtype)
+    encoder_hidden_states_translation = feature_extractor(**inputs).last_hidden_state.to(device=pipe.device, dtype=dtype)
 
 
     ###### translation
@@ -154,3 +154,4 @@ def inversion_translate(args, input_batch, eta_schedule_inversion, eta_schedule_
 
 if __name__ == "__main__":
     main()
+    
