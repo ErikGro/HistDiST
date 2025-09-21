@@ -30,11 +30,13 @@ VAE encoder maps H&E image to latent space, where DDIM inversion derives noise l
 ## Setup
 ### Models
 All trained models can be downloaded from [Google Drive](https://drive.google.com/drive/folders/1onzQ05SVYCxsGMYhMis25Bsm3nwFbiyi?usp=sharing).
+(Google Drive might move unet safetensors file out of zip to root and add a suffix to unet safetensor filename.)
 
 ### Datasets
 [MIST](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE) and [BCI](https://github.com/bupt-ai-cz/BCI) datasets are used to finetune Stable Diffusion 1.5 for H&E to ER/HER2/Ki67/PR transfer. Images are cropped randomly from size 1024x1024 to 512x512.
 
 ### Requirements
+We ran training and inference with a single or multiple 24GB VRAM CUDA GPU's.
 ```shell
 conda install pytorch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 pytorch-cuda=11.8 -c pytorch -c nvidia 
 pip install diffusers==0.16.1 
@@ -62,7 +64,7 @@ python training/training.py \
 
 ### Inference
 ```bash
-python inference/inference.py --model_folder_path path/to/er_model_folder --img_path inference/example_images/er.jpg
+python inference/inference.py --model_folder_path path/to/er_model_folder --img_path inference/example_images/he.jpg
 ```
 
 ### TODO
@@ -71,7 +73,7 @@ python inference/inference.py --model_folder_path path/to/er_model_folder --img_
 - [ ] Training: Resolve/Refactor imports
 - [ ] Training: Compute Metrics (optional) Copy metrics folder from ASP Repo
 - [ ] Requirements.txt (export from python venv)
-- [ ] Validate repository instructions (Emty venv/installation/model download)
+- [x] Validate repository instructions (Emty venv/installation/model download)
 - [x] Quote ASP Paper
 - [x] Quote BCI paper
 - [x] Quote Diffusers library
