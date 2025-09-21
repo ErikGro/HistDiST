@@ -24,7 +24,6 @@ import shutil
 from pathlib import Path
 import statistics
 import random
-
 import accelerate
 import datasets
 import numpy as np
@@ -33,7 +32,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import transformers
-import timm
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import ProjectConfiguration, set_seed
@@ -44,7 +42,6 @@ from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer, AutoImageProcessor, ViTModel
 from pytorch_fid.fid_score import calculate_activation_statistics, calculate_frechet_distance
 from pytorch_fid.inception import InceptionV3
-
 import diffusers
 from diffusers import AutoencoderKL, DDPMScheduler, StableDiffusionInstructPix2PixPipeline, UNet2DConditionModel, DDIMScheduler
 from diffusers.optimization import get_scheduler
@@ -55,9 +52,7 @@ from diffusers.utils.torch_utils import is_compiled_module
 from torchvision.transforms import v2
 from skimage.metrics import structural_similarity as ssim
 import cv2
-from PIL import Image
 from torchvision import transforms
-
 from datasets import Dataset, Features
 from datasets import Image as ImageFeature
 
@@ -529,8 +524,8 @@ def main():
         args,
         accelerator
         ):
-        if (dir_he is None or dir_ihc is None):
-            logger.error("Skipping validation - arg validation_dir_he or validation_dir_ihc not provided.")
+        if (dir_he is None or dir_ihc_target is None):
+            logger.error("Skipping validation - args validation_dir_he or validation_dir_ihc not provided.")
             return
         
         logger.info(
