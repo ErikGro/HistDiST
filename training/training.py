@@ -99,14 +99,19 @@ def parse_args():
     parser.add_argument(
         "--translation_prompt",
         type=str,
-        default="Transform H&E-stained tissue, featuring pink cytoplasm and blue nuclei, into ER (IHC) stained tissue with brown ER-positive nuclei and light pink counterstained background.",
-        help="The prompt used as text conditioning for i2i translation, will be the same for all batches",
+        default="IHC",
+        help="The prompt used as text conditioning for H&E->IHC translation, will be the same for all batches",
+    )
+    parser.add_argument(
+        "--data_set_dir",
+        type=str,
+        help="The path to the dir to load pairs of H&E and IHC images from",
     )
     parser.add_argument(
         "--he_generation_prompt",
         type=str,
-        default="Transform H&E-stained tissue, featuring pink cytoplasm and blue nuclei, into ER (IHC) stained tissue with brown ER-positive nuclei and light pink counterstained background.",
-        help="The prompt used as text conditioning for i2i translation, will be the same for all batches",
+        default="H&E",
+        help="The prompt used as text conditioning H&E generation, will be the same for all batches",
     )
     parser.add_argument(
         "--train_batch_size", type=int, default=16, help="Batch size (per device) for the training dataloader."
@@ -160,14 +165,7 @@ def parse_args():
         "--bias_he_ihc",
         type=float,
         default=0.5,
-        help="Blends between only he generation at 0 an only he->ihc translation at 1"
-    )
-    parser.add_argument(
-        "--conditioning",
-        type=str,
-        default=None,
-        choices=["input", "xattention", "combined"],
-        help="Choose for conditioning translation by concatenating to input layers, adding via xattention or both",
+        help="Blends between exclusive H&E generation at 0 and exclusive H&E->IHC translation at 1"
     )
     parser.add_argument("--noise_offset", type=float, default=0, help="The scale of noise offset.")
     parser.add_argument(
@@ -400,7 +398,7 @@ def main():
 
 
     dataset = Dataset.from_generator(
-        gen_examples("/graphics/scratch3/staff/hosseinza/MIST/PR", num_samples_to_use=4096),
+        gen_examples(args.data_set_dir, num_samples_to_use=4096),
         features=Features(
             he_image=ImageFeature(),
             ihc_image=ImageFeature()

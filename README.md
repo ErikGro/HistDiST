@@ -44,19 +44,20 @@ pip install transformers==4.32.1
 ```
 
 ### Training
-- dataset_dir 
-  - Structure of MIST Dataset 
-- validation_dir
-  - Structure like xyz 
-  - 1000 jpg images size 512x512 
-  - Compute FID/SSIM/PSNR
+- Assumed dataset directory structure like MIST Dataset structure: 
+  - TrainValAB/
+    - trainA/ // Contains source H&E images with size 1024x1024 
+    - trainB/ // Contains corresponding IHC images with size 1024x1024
 
 ```bash
+# /graphics/scratch2/students/grosskop/raw_datasets/ER/
 python training/training.py \
 --pretrained_model_name_or_path=botp/stable-diffusion-v1-5 \
+--data_set_dir=/graphics/scratch3/staff/hosseinza/MIST/ER \
 --output_dir=training/output \
 --num_train_epochs=300 \
 --train_batch_size=16 \
+--bias_he_ihc=0.5 \
 --prediction_type=v_prediction \
 --mixed_precision=bf16 \
 --resolution=512
@@ -64,8 +65,16 @@ python training/training.py \
 
 ### Inference
 ```bash
-python inference/inference.py --model_folder_path path/to/er_model_folder --img_path inference/example_images/he.jpg
+python inference/inference.py \
+--model_folder_path path/to/er_model_folder \
+--img_path inference/example_images/he.jpg
 ```
+
+### Evaluation
+- validation_dir
+  - Structure like xyz 
+  - 1000 jpg images size 512x512 
+  - Compute FID/SSIM/PSNR
 
 ### TODO
 - [x] Update README
