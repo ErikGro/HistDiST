@@ -3,10 +3,10 @@
 Official pytorch implementation of HistDiST.
 This repository contains scripts for fine-tuning pretrained Stable Diffusion models for the task of stain transfer, along with the corresponding inference script.
 
-Erik Großkopf,
-[Valay Bundele](https://scholar.google.com/citations?user=xWvW9_UAAAAJ&hl=en&oi=ao),
-[Mehran Hossienzadeh](https://scholar.google.com/citations?user=V5yInfUAAAAJ&hl=en), 
-[Hendrik P.A. Lensch](https://scholar.google.de/citations?user=2R22h84AAAAJ&hl=en)
+[Erik Großkopf](https://scholar.google.com/citations?user=5Yf0fZoAAAAJ)
+[Valay Bundele](https://scholar.google.com/citations?user=xWvW9_UAAAAJ),
+[Mehran Hossienzadeh](https://scholar.google.com/citations?user=V5yInfUAAAAJ), 
+[Hendrik P.A. Lensch](https://scholar.google.de/citations?user=2R22h84AAAAJ)
 
 ## Abstract 
 Hematoxylin and Eosin (H&E) staining is the cornerstone of histopathology but lacks molecular specificity. While Immunohistochemistry (IHC) provides molecular insights, it is costly and complex, motivating H&E-to-IHC translation as a cost-effective alternative. Existing translation methods are mainly GAN-based, often struggling with training instability and limited structural fidelity, while diffusion-based approaches remain underexplored. We propose HistDiST, a Latent Diffusion Model (LDM) based framework for high-fidelity H&E-to-IHC translation. HistDiST introduces a dual-conditioning strategy, utilizing Phikon-extracted morphological embeddings alongside VAE-encoded H&E representations to ensure pathology-relevant context and structural consistency. To overcome brightness biases, we incorporate a rescaled noise schedule, v-prediction, and trailing timesteps, enforcing a zero-SNR condition at the final timestep. During inference, DDIM inversion preserves the morphological structure, while an η-cosine noise schedule introduces controlled stochasticity, balancing structural consistency and molecular fidelity. Moreover, we propose Molecular Retrieval Accuracy (MRA), a novel pathology-aware metric leveraging GigaPath embeddings to assess molecular relevance. Extensive evaluations on MIST and BCI datasets demonstrate that HistDiST significantly outperforms existing methods, achieving a 28% improvement in MRA on the H&E-to-Ki67 translation task, highlighting its effectiveness in capturing true IHC semantics.
@@ -72,11 +72,27 @@ python inference/inference.py --model_folder_path path/to/er_model_folder --img_
 - [ ] Training: Compute Metrics (optional) Copy metrics folder from ASP Repo
 - [ ] Requirements.txt (export from python venv)
 - [ ] Validate repository instructions (Emty venv/installation/model download)
-- [ ] Quote ASP Paper
-- [ ] Quote Diffusers library
+- [x] Quote ASP Paper
+- [x] Quote BCI paper
+- [x] Quote Diffusers library
 - [x] Used Dataset links
 - [x] Figures
   - [x] Examples
   - [x] Training
   - [x] Inference
-- [ ] Acknowledgement/Citation
+- [x] Citation
+- [x] Acknowledgement
+
+
+### Citation
+If you use this code for your research, please cite our [paper](https://arxiv.org/pdf/2505.06793).
+```
+@misc{grosskopf2025histdist,
+  title={HistDiST: Histopathological Diffusion-based Stain Transfer}, 
+  author={Erik Großkopf and Valay Bundele and Mehran Hossienzadeh and Hendrik P. A. Lensch},
+  year={2025},
+}
+```
+
+### Acknowledgement
+We thank Fangda Li et al. for their [MIST dataset](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE) we used for training and evaluation and their [evaluation script](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE/blob/master/evaluate.py) we based our implementation upon. Also we thank Liu et al. for their (BCI dataset)[https://bupt-ai-cz.github.io/BCI/] we also used for training and evaluation. We thank all [hugging face diffusers](https://github.com/huggingface/diffusers) authors for their training and inference scripts we based our implementation upon.  
