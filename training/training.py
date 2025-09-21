@@ -123,6 +123,18 @@ def parse_args():
         help="Initial learning rate (after the potential warmup period) to use.",
     )
     parser.add_argument(
+        "--validation_dir_he",
+        type=str,
+        default=None,
+        help="Path to folder containg H&E images for validation",
+    )
+    parser.add_argument(
+        "--validation_dir_ihc",
+        type=str,
+        default=None,
+        help="Path to folder containg H&E images for validation",
+    )
+    parser.add_argument(
         "--prediction_type",
         type=str,
         default=None,
@@ -405,17 +417,17 @@ def main():
         ),
     )
     
-    model = ViTModel.from_pretrained("owkin/phikon", add_pooling_layer=False)
+    vitPhikonModel = ViTModel.from_pretrained("owkin/phikon", add_pooling_layer=False)
     image_processor = AutoImageProcessor.from_pretrained("owkin/phikon")
-    model.to(accelerator.device)
+    vitPhikonModel.to(accelerator.device)
     
     # Logging 
     num_inference_steps = 20
     image_guidance_scale = 0
     guidance_scale = 0
     inference_batch_size = 4
-    dir_he = Path("/graphics/scratch2/students/grosskop/benchmark_er_testset/valA/")
-    dir_ihc_target = Path("/graphics/scratch2/students/grosskop/benchmark_er_testset/valB")
+    dir_he = Path(args.validation_dir_he)
+    dir_ihc_target = Path(args.validation_dir_ihc)
     dir_ihc_genereated = os.path.join(args.output_dir, "generated/ihc")
     dir_he_genereated = os.path.join(args.output_dir, "generated/he")
     os.makedirs(dir_ihc_genereated, exist_ok=True)
@@ -444,12 +456,12 @@ def main():
 
         dims = 2048
         block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
-        model = InceptionV3([block_idx]).to(device)
+        fidInceptionModel = InceptionV3([block_idx]).to(device)
 
-        m1, s1 = calculate_activation_statistics(real_paths, model, batch_size=10, dims=dims,
+        m1, s1 = calculate_activation_statistics(real_paths, fidInceptionModel, batch_size=10, dims=dims,
                                             device=device, num_workers=num_workers)
 
-        m2, s2 = calculate_activation_statistics(fake_paths, model, batch_size=10, dims=dims,
+        m2, s2 = calculate_activation_statistics(fake_paths, fidInceptionModel, batch_size=10, dims=dims,
                                             device=device, num_workers=num_workers)
 
         fid_value = calculate_frechet_distance(m1, s1, m2, s2)
@@ -463,9 +475,9 @@ def main():
             batch = list(map(lambda l: PIL.Image.open(f"{dir_he}/{l:03d}.jpg"), indices))
             tensor_batch = torch.stack([v2.ToTensor()(image) for image in batch])
 
-            # inputs = image_processor(tensor_batch, return_tensors="pt", do_rescale=False).to(accelerator.device)
-            # with torch.no_grad():
-                # hidden_states = model(**inputs).last_hidden_state.to(accelerator.device)
+            inputs = image_processor(tensor_batch, return_tensors="pt", do_rescale=False).to(accelerator.device)
+            with torch.no_grad():
+                hidden_states = vitPhikonModel(**inputs).last_hidden_state.to(accelerator.device)
 
             ihc_generated = pipe([args.translation_prompt] * len(tensor_batch),
                 image=tensor_batch,
@@ -517,6 +529,10 @@ def main():
         args,
         accelerator
         ):
+        if (dir_he is None or dir_ihc is None):
+            logger.error("Skipping validation - arg validation_dir_he or validation_dir_ihc not provided.")
+            return
+        
         logger.info(
             f"Running validation... \n Generating {args.num_validation_images} images with prompt:"
             f" {args.translation_prompt}."
@@ -541,14 +557,13 @@ def main():
             
             he_image = PIL.Image.open("val_image_he.jpg")     
             tensor_batch = torch.stack([v2.ToTensor()(image) for image in [he_image]])
-            # inputs = image_processor(tensor_batch, return_tensors="pt", do_rescale=False).to(accelerator.device)
-            # with torch.no_grad():
-            #     hidden_states = model(**inputs).last_hidden_state.to(accelerator.device)
+            inputs = image_processor(tensor_batch, return_tensors="pt", do_rescale=False).to(accelerator.device)
+            with torch.no_grad():
+                hidden_states = vitPhikonModel(**inputs).last_hidden_state.to(accelerator.device)
                                 
             for i in range(args.num_validation_images):
                 translated_images.append(
                     pipeline(
-                        # args.translation_prompt,
                         image=he_image,
                         prompt_embeds=hidden_states,
                         num_inference_steps=num_inference_steps,
@@ -950,8 +965,6 @@ def main():
 
             with accelerator.accumulate(unet):
                 generate_he = step % 2 == 0
-                # generate_he = False # ONLY TRANSLATE
-                # mask_he = (torch.rand(len(batch["ihc_pixel_values"])) > args.bias_he_ihc).bool()
 
                 batch_pixels = batch["he_pixel_values" if generate_he else "ihc_pixel_values"]
                 # batch_pixels[mask_he] = batch["he_pixel_values"][mask_he]
@@ -973,7 +986,6 @@ def main():
                 # Get the additional image embedding for conditioning.
                 # Instead of getting a diagonal Gaussian here, we simply take the mode.
                 he_image_embeds = vae.encode(batch["he_pixel_values"].to(weight_dtype)).latent_dist.mode()
-                # he_image_embeds[mask_he] = torch.zeros_like(he_image_embeds)[mask_he]
                 if generate_he:
                     he_image_embeds = torch.zeros_like(he_image_embeds)
                 
@@ -988,16 +1000,13 @@ def main():
                 else:
                     raise ValueError(f"Unknown prediction type {noise_scheduler.config.prediction_type}")
 
-                # prompt_embeds = translation_prompt
-                # prompt_embeds[mask_he] = he_prompt[mask_he]
                 if generate_he:
                     hidden_states = he_prompt
                 else:
-                    # hidden_states = translation_prompt
                     embeds_input = (batch["he_pixel_values"] + 1) / 2
                     inputs = image_processor(embeds_input, return_tensors="pt", do_rescale=False).to(target_latents.device)
                     with torch.no_grad():
-                        hidden_states = model(**inputs).last_hidden_state.to(target_latents.device)
+                        hidden_states = vitPhikonModel(**inputs).last_hidden_state.to(target_latents.device)
 
                 # Predict the noise residual and compute loss
                 model_pred = unet(concatenated_noisy_latents, timesteps, hidden_states, return_dict=False)[0]

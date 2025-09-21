@@ -50,23 +50,38 @@ pip install transformers==4.32.1
     - trainB/ // Contains corresponding IHC images with size 1024x1024
 
 ```bash
-# /graphics/scratch2/students/grosskop/raw_datasets/ER/
-python training/training.py \
---pretrained_model_name_or_path=botp/stable-diffusion-v1-5 \
---data_set_dir=/graphics/scratch3/staff/hosseinza/MIST/ER \
---output_dir=training/output \
+MODEL_NAME="botp/stable-diffusion-v1-5"
+DATASET_DIR=/set/here/path/to/dataset/
+export CUDA_VISIBLE_DEVICES=0
+export NCCL_P2P_DISABLE="1"
+export NCCL_IB_DISABLE="1"
+
+accelerate launch --num_processes=3 --num_machines=1 --mixed_precision=bf16 --dynamo_backend=no --gpu_ids $CUDA_VISIBLE_DEVICES training/training.py \
+--data_set_dir=$DATASET_DIR \
 --num_train_epochs=300 \
---train_batch_size=16 \
+--validation_epochs=50 \
+--prediction_type="v_prediction" \
+--output_dir=training/output \
 --bias_he_ihc=0.5 \
---prediction_type=v_prediction \
---mixed_precision=bf16 \
---resolution=512
+--pretrained_model_name_or_path=$MODEL_NAME \
+--train_batch_size=16 \
+--learning_rate=1.5e-4 \
+--lr_scheduler="cosine" \
+--lr_warmup_steps=1000 \
+--mixed_precision="bf16" \
+--resolution=512 \
+--translation_prompt="IHC" \
+--he_generation_prompt="H&E" \
+--gradient_checkpointing \
+--enable_xformers_memory_efficient_attention \
+--report_to="wandb" \
+--checkpointing_steps=4000 \
 ```
 
 ### Inference
 ```bash
 python inference/inference.py \
---model_folder_path path/to/er_model_folder \
+--model_folder_path /set/here/path/to/er_model_folder \
 --img_path inference/example_images/he.jpg
 ```
 
