@@ -90,9 +90,9 @@ If you use this code for your research, please cite our [paper](https://arxiv.or
 @misc{grosskopf2025histdist,
   title={HistDiST: Histopathological Diffusion-based Stain Transfer}, 
   author={Erik Großkopf and Valay Bundele and Mehran Hossienzadeh and Hendrik P. A. Lensch},
-  year={2025},
+  year={2025}
 }
 ```
 
 ### Acknowledgement
-We thank Fangda Li et al. for their [MIST dataset](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE) we used for both training and evaluation and their [evaluation script](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE/blob/master/evaluate.py) we based our implementation upon. Also we thank Liu et al. for their [BCI dataset](https://bupt-ai-cz.github.io/BCI/) we also used for both training and evaluation. We thank all [hugging face diffusers](https://github.com/huggingface/diffusers) authors for their training and inference scripts we based our implementation upon.  
+We thank Fangda Li et al. for their [MIST dataset](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE) we used for both training and evaluation and their [evaluation script](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE/blob/master/evaluate.py) we based our evaluation implementation upon. Also we thank Liu et al. for their [BCI dataset](https://bupt-ai-cz.github.io/BCI/) we also used for both training and evaluation. We thank Filiot et al. for their pretraiend (Phikon)[https://github.com/owkin/HistoSSLscaling/] model which we used for encoding input features during the translation training. We thank Xu et al. for their pretrained (Prov-GigaPath)[https://github.com/prov-gigapath/prov-gigapath] model we used for your accuracy based metric. We thank all [hugging face diffusers](https://github.com/huggingface/diffusers) authors for their training and inference scripts we based our implementation upon.  
