@@ -3,7 +3,7 @@
 Official pytorch implementation of HistDiST.
 This repository contains scripts for fine-tuning pretrained Stable Diffusion models for the task of stain transfer, along with the corresponding inference script.
 
-[Erik Großkopf](https://scholar.google.com/citations?user=5Yf0fZoAAAAJ)
+[Erik Großkopf](https://scholar.google.com/citations?user=5Yf0fZoAAAAJ),
 [Valay Bundele](https://scholar.google.com/citations?user=xWvW9_UAAAAJ),
 [Mehran Hossienzadeh](https://scholar.google.com/citations?user=V5yInfUAAAAJ), 
 [Hendrik P.A. Lensch](https://scholar.google.de/citations?user=2R22h84AAAAJ)
@@ -32,7 +32,7 @@ VAE encoder maps H&E image to latent space, where DDIM inversion derives noise l
 All trained models can be downloaded from [Google Drive](https://drive.google.com/drive/folders/1onzQ05SVYCxsGMYhMis25Bsm3nwFbiyi?usp=sharing).
 
 ### Datasets
-[MIST](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE) and [BCI](https://github.com/bupt-ai-cz/BCI) datasets are used to finetune our models from H&E to ER/HER2/Ki67/PR transfer. Images are cropped randomly from size 1024x1024 to 512x512.
+[MIST](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE) and [BCI](https://github.com/bupt-ai-cz/BCI) datasets are used to finetune Stable Diffusion 1.5 for H&E to ER/HER2/Ki67/PR transfer. Images are cropped randomly from size 1024x1024 to 512x512.
 
 ### Requirements
 ```shell
@@ -95,4 +95,4 @@ If you use this code for your research, please cite our [paper](https://arxiv.or
 ```
 
 ### Acknowledgement
-We thank Fangda Li et al. for their [MIST dataset](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE) we used for training and evaluation and their [evaluation script](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE/blob/master/evaluate.py) we based our implementation upon. Also we thank Liu et al. for their (BCI dataset)[https://bupt-ai-cz.github.io/BCI/] we also used for training and evaluation. We thank all [hugging face diffusers](https://github.com/huggingface/diffusers) authors for their training and inference scripts we based our implementation upon.  
+We thank Fangda Li et al. for their [MIST dataset](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE) we used for both training and evaluation and their [evaluation script](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE/blob/master/evaluate.py) we based our implementation upon. Also we thank Liu et al. for their [BCI dataset](https://bupt-ai-cz.github.io/BCI/) we also used for both training and evaluation. We thank all [hugging face diffusers](https://github.com/huggingface/diffusers) authors for their training and inference scripts we based our implementation upon.  
