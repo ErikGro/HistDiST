@@ -5,7 +5,7 @@ This repository contains scripts for fine-tuning pretrained Stable Diffusion mod
 
 [Erik Großkopf](https://scholar.google.com/citations?user=5Yf0fZoAAAAJ),
 [Valay Bundele](https://scholar.google.com/citations?user=xWvW9_UAAAAJ),
-[Mehran Hossienzadeh](https://scholar.google.com/citations?user=V5yInfUAAAAJ), 
+[Mehran Hosseinzadeh](https://scholar.google.com/citations?user=V5yInfUAAAAJ), 
 [Hendrik P.A. Lensch](https://scholar.google.de/citations?user=2R22h84AAAAJ)
 
 ## Abstract 
@@ -97,7 +97,7 @@ If you use this code for your research, please cite our [paper](https://arxiv.or
 ```
 @misc{grosskopf2025histdist,
   title={HistDiST: Histopathological Diffusion-based Stain Transfer}, 
-  author={Erik Großkopf and Valay Bundele and Mehran Hossienzadeh and Hendrik P. A. Lensch},
+  author={Erik Großkopf and Valay Bundele and Mehran Hosseinzadeh and Hendrik P. A. Lensch},
   year={2025}
 }
 ```
