@@ -86,29 +86,11 @@ python inference/inference.py \
 ```
 
 ### Evaluation
-- validation_dir
-  - Structure like xyz 
-  - 1000 jpg images size 512x512 
-  - Compute FID/SSIM/PSNR
-
-### TODO
-- [x] Update README
-- [x] Add arguments to inferece.py script for modelpath
-- [ ] Training: Resolve/Refactor imports
-- [ ] Training: Compute Metrics (optional) Copy metrics folder from ASP Repo
-- [ ] Requirements.txt (export from python venv)
-- [x] Validate repository instructions (Emty venv/installation/model download)
-- [x] Quote ASP Paper
-- [x] Quote BCI paper
-- [x] Quote Diffusers library
-- [x] Used Dataset links
-- [x] Figures
-  - [x] Examples
-  - [x] Training
-  - [x] Inference
-- [x] Citation
-- [x] Acknowledgement
-
+```bash
+python evaluate.py \
+--target_dir /path/to/target/dir \
+--generated_dir /path/to/generated/dir
+```
 
 ### Citation
 If you use this code for your research, please cite our [paper](https://arxiv.org/pdf/2505.06793).
