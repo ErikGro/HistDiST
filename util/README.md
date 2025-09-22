@@ -1,0 +1,1 @@
+We thank Fangda Li et al. for their [util](https://github.com/lifangda01/AdaptiveSupervisedPatchNCE) implementation.
